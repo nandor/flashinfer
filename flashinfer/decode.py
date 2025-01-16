@@ -74,15 +74,15 @@ def get_single_decode_module(*args):
             v: torch.Tensor,
             tmp: torch.Tensor,
             alibi_slopes: Optional[torch.Tensor],
+            o: torch.Tensor,
             kv_layout_code: int,
             window_left: int,
             logits_soft_cap: float,
             sm_scale: float,
             rope_scale: float,
             rope_theta: float,
-        ) -> torch.Tensor:
+        ) -> None:
             with q.device as device:
-                o = torch.empty_like(q)
                 run_func(
                     q,
                     k,
@@ -99,8 +99,6 @@ def get_single_decode_module(*args):
                     get_cuda_stream(device),
                 )
 
-                return o
-
         @register_fake_op(f"flashinfer::{uri}_run")
         def _fake_run_single_decode(
             q: torch.Tensor,
@@ -108,14 +106,15 @@ def get_single_decode_module(*args):
             v: torch.Tensor,
             tmp: torch.Tensor,
             alibi_slopes: Optional[torch.Tensor],
+            o: torch.Tensor,
             kv_layout_code: int,
             window_left: int,
             logits_soft_cap: float,
             sm_scale: float,
             rope_scale: float,
             rope_theta: float,
-        ) -> torch.Tensor:
-            return torch.empty_like(q)
+        ) -> None:
+            pass
 
         # Register the module.
         _single_decode_modules[args] = SimpleNamespace(run=run_single_decode)
@@ -172,6 +171,7 @@ def get_batch_decode_module(*args):
             paged_kv_indices: torch.Tensor,
             paged_kv_last_page_len: torch.Tensor,
             alibi_slopes: Optional[torch.Tensor],
+            o: torch.Tensor,
             kv_layout_code: int,
             window_left: int,
             logits_soft_cap: float,
@@ -179,9 +179,8 @@ def get_batch_decode_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
+        ) -> None:
             with q.device as device:
-                o = torch.empty_like(q)
                 run_func(
                     float_workspace_buffer,
                     int_workspace_buffer,
@@ -203,7 +202,6 @@ def get_batch_decode_module(*args):
                     maybe_lse,
                     get_cuda_stream(device),
                 )
-                return o
 
         @register_fake_op(f"flashinfer::{uri}_run")
         def _fake_run_batch_decode(
@@ -217,6 +215,7 @@ def get_batch_decode_module(*args):
             paged_kv_indices: torch.Tensor,
             paged_kv_last_page_len: torch.Tensor,
             alibi_slopes: Optional[torch.Tensor],
+            o: torch.Tensor,
             kv_layout_code: int,
             window_left: int,
             logits_soft_cap: float,
@@ -224,8 +223,8 @@ def get_batch_decode_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
-            return torch.empty_like(q)
+        ) -> None:
+            pass
 
         # Register the module.
         #
@@ -380,37 +379,37 @@ def single_decode_with_kv_cache(
     num_qo_heads = q.shape[0]
 
     if use_tensor_cores:
-        out = (
-            get_single_prefill_module(
-                q.dtype,
-                k.dtype,
-                q.dtype,
-                head_dim,
-                PosEncodingMode[pos_encoding_mode].value,
-                window_left != -1,  # use_sliding_window
-                logits_soft_cap > 0,  # use_logits_soft_cap
-                False,  # allow_fp16_qk_reduction
-            )
-            .run(
-                MaskMode.NON_CAUSAL.value,
-                q.unsqueeze(0),
-                k,
-                v,
-                None,  # packed_custom_mask
-                tmp,
-                _get_cache_alibi_slopes_buf(num_qo_heads, q.device),
-                TensorLayout[kv_layout].value,
-                window_left,
-                logits_soft_cap,
-                sm_scale,
-                rope_scale,
-                rope_theta,
-                None,  # maybe_lse
-            )[0]
-            .squeeze(0)
+        out = torch.empty_like(q.unsqueeze(0))
+        get_single_prefill_module(
+            q.dtype,
+            k.dtype,
+            q.dtype,
+            head_dim,
+            PosEncodingMode[pos_encoding_mode].value,
+            window_left != -1,  # use_sliding_window
+            logits_soft_cap > 0,  # use_logits_soft_cap
+            False,  # allow_fp16_qk_reduction
+        ).run(
+            MaskMode.NON_CAUSAL.value,
+            q.unsqueeze(0),
+            k,
+            v,
+            None,  # packed_custom_mask
+            tmp,
+            _get_cache_alibi_slopes_buf(num_qo_heads, q.device),
+            out,
+            TensorLayout[kv_layout].value,
+            window_left,
+            logits_soft_cap,
+            sm_scale,
+            rope_scale,
+            rope_theta,
+            None,  # maybe_lse
         )
+        out = out.squeeze(0)
     else:
-        out = get_single_decode_module(
+        out = torch.empty_like(q)
+        get_single_decode_module(
             q.dtype,
             k.dtype,
             q.dtype,
@@ -424,6 +423,7 @@ def single_decode_with_kv_cache(
             v,
             tmp,
             _get_cache_alibi_slopes_buf(num_qo_heads, q.device),
+            out,
             TensorLayout[kv_layout].value,
             window_left,
             logits_soft_cap,
@@ -945,7 +945,8 @@ class BatchDecodeWithPagedKVCacheWrapper:
             )
 
         if self.use_tensor_cores:
-            out = self._cached_module.paged_run(
+            out = torch.empty_like(q)
+            self._cached_module.paged_run(
                 MaskMode.NON_CAUSAL.value,
                 self._float_workspace_buffer,
                 self._int_workspace_buffer,
@@ -960,6 +961,7 @@ class BatchDecodeWithPagedKVCacheWrapper:
                 self._paged_kv_indices_buf,
                 self._paged_kv_last_page_len_buf,
                 None,  # qk_indptr_buf
+                out,
                 TensorLayout[self._kv_layout].value,
                 window_left,
                 logits_soft_cap,

@@ -82,6 +82,7 @@ def get_single_prefill_sm90_module(*args):
             maybe_packed_custom_mask: Optional[torch.Tensor],
             tmp: torch.Tensor,
             maybe_alibi_slopes: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -89,9 +90,8 @@ def get_single_prefill_sm90_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
+        ) -> None:
             with q.device as device:  # device guard
-                o = torch.empty_like(q)
                 run_func(
                     mask_mode,
                     q,
@@ -110,7 +110,6 @@ def get_single_prefill_sm90_module(*args):
                     maybe_lse,
                     get_cuda_stream(device),
                 )
-                return o
 
         @register_fake_op(f"flashinfer::{uri}_run")
         def _fake_run_single_prefill_sm90(
@@ -121,6 +120,7 @@ def get_single_prefill_sm90_module(*args):
             maybe_packed_custom_mask: Optional[torch.Tensor],
             tmp: torch.Tensor,
             maybe_alibi_slopes: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -128,8 +128,8 @@ def get_single_prefill_sm90_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
-            return torch.empty_like(q)
+        ) -> None:
+            pass
 
         # Register the module
         _single_prefill_sm90_modules[args] = SimpleNamespace(
@@ -161,6 +161,7 @@ def get_single_prefill_module(*args):
             maybe_packed_custom_mask: Optional[torch.Tensor],
             tmp: torch.Tensor,
             maybe_alibi_slopes: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -168,9 +169,8 @@ def get_single_prefill_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
+        ) -> None:
             with q.device as device:  # device guard
-                o = torch.empty_like(q)
                 run_func(
                     mask_mode,
                     q,
@@ -189,7 +189,6 @@ def get_single_prefill_module(*args):
                     maybe_lse,
                     get_cuda_stream(device),
                 )
-                return o
 
         @register_fake_op(f"flashinfer::{uri}_run")
         def _fake_run_single_prefill(
@@ -200,6 +199,7 @@ def get_single_prefill_module(*args):
             maybe_packed_custom_mask: Optional[torch.Tensor],
             tmp: torch.Tensor,
             maybe_alibi_slopes: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -207,8 +207,8 @@ def get_single_prefill_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
-            return torch.empty_like(q)
+        ) -> None:
+            pass
 
         # Register the module
         _single_prefill_modules[args] = SimpleNamespace(run=run_single_prefill)
@@ -262,6 +262,7 @@ def get_batch_prefill_sm90_module(*args):
             qo_indptr: torch.Tensor,
             kv_indptr: torch.Tensor,
             maybe_qk_indptr: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -269,9 +270,8 @@ def get_batch_prefill_sm90_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
+        ) -> None:
             with q.device as device:  # device guard
-                o = torch.empty_like(q)
                 ragged_run_func(
                     mask_mode,
                     float_workspace_buffer,
@@ -295,7 +295,6 @@ def get_batch_prefill_sm90_module(*args):
                     maybe_lse,
                     get_cuda_stream(device),
                 )
-                return o
 
         @register_fake_op(f"flashinfer::{uri}_ragged_run")
         def _fake_ragged_run(
@@ -311,6 +310,7 @@ def get_batch_prefill_sm90_module(*args):
             qo_indptr: torch.Tensor,
             kv_indptr: torch.Tensor,
             maybe_qk_indptr: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -318,8 +318,8 @@ def get_batch_prefill_sm90_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
-            return torch.empty_like(q)
+        ) -> None:
+            pass
 
         # torch library for paged_run
 
@@ -348,6 +348,7 @@ def get_batch_prefill_sm90_module(*args):
             paged_kv_indices: torch.Tensor,
             paged_kv_last_page_len: torch.Tensor,
             maybe_qk_indptr: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -355,9 +356,8 @@ def get_batch_prefill_sm90_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
+        ) -> None:
             with q.device as device:  # device guard
-                o = torch.empty_like(q)
                 paged_run_func(
                     mask_mode,
                     float_workspace_buffer,
@@ -383,7 +383,6 @@ def get_batch_prefill_sm90_module(*args):
                     maybe_lse,
                     get_cuda_stream(device),
                 )
-                return o
 
         @register_fake_op(f"flashinfer::{uri}_paged_run")
         def _fake_paged_run(
@@ -467,6 +466,7 @@ def get_batch_prefill_module(*args):
             qo_indptr: torch.Tensor,
             kv_indptr: torch.Tensor,
             maybe_qk_indptr: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -474,9 +474,8 @@ def get_batch_prefill_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
+        ) -> None:
             with q.device as device:  # device guard
-                o = torch.empty_like(q)
                 ragged_run_func(
                     mask_mode,
                     float_workspace_buffer,
@@ -500,7 +499,6 @@ def get_batch_prefill_module(*args):
                     maybe_lse,
                     get_cuda_stream(device),
                 )
-                return o
 
         @register_fake_op(f"flashinfer::{uri}_ragged_run")
         def _fake_ragged_run(
@@ -516,6 +514,7 @@ def get_batch_prefill_module(*args):
             qo_indptr: torch.Tensor,
             kv_indptr: torch.Tensor,
             maybe_qk_indptr: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -523,8 +522,8 @@ def get_batch_prefill_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
-            return torch.empty_like(q)
+        ) -> None:
+            pass
 
         # torch library for paged_run
 
@@ -553,6 +552,7 @@ def get_batch_prefill_module(*args):
             paged_kv_indices: torch.Tensor,
             paged_kv_last_page_len: torch.Tensor,
             maybe_qk_indptr: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -560,9 +560,8 @@ def get_batch_prefill_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
+        ) -> None:
             with q.device as device:  # device guard
-                o = torch.empty_like(q)
                 paged_run_func(
                     mask_mode,
                     float_workspace_buffer,
@@ -588,7 +587,6 @@ def get_batch_prefill_module(*args):
                     maybe_lse,
                     get_cuda_stream(device),
                 )
-                return o
 
         @register_fake_op(f"flashinfer::{uri}_paged_run")
         def _fake_paged_run(
@@ -606,6 +604,7 @@ def get_batch_prefill_module(*args):
             paged_kv_indices: torch.Tensor,
             paged_kv_last_page_len: torch.Tensor,
             maybe_qk_indptr: Optional[torch.Tensor],
+            o: torch.Tensor,
             layout: int,
             window_left: int,
             logits_soft_cap: float,
@@ -613,8 +612,8 @@ def get_batch_prefill_module(*args):
             rope_scale: float,
             rope_theta: float,
             maybe_lse: Optional[torch.Tensor],
-        ) -> torch.Tensor:
-            return torch.empty_like(q)
+        ) -> None:
+            pass
 
         # Register the module.
         #
@@ -744,6 +743,7 @@ def get_batch_prefill_jit_module(module_name: str, jit_module: Any):
         paged_kv_indices: torch.Tensor,
         paged_kv_last_page_len: torch.Tensor,
         maybe_qk_indptr: Optional[torch.Tensor],
+        o: torch.Tensor,
         layout: int,
         window_left: int,
         logits_soft_cap: float,
@@ -751,9 +751,8 @@ def get_batch_prefill_jit_module(module_name: str, jit_module: Any):
         rope_scale: float,
         rope_theta: float,
         maybe_lse: Optional[torch.Tensor],
-    ) -> torch.Tensor:
+    ) -> None:
         with q.device as device:  # device guard
-            o = torch.empty_like(q)
             paged_run_func(
                 mask_mode,
                 float_workspace_buffer,
@@ -779,7 +778,6 @@ def get_batch_prefill_jit_module(module_name: str, jit_module: Any):
                 maybe_lse,
                 get_cuda_stream(device),
             )
-            return o
 
     @register_fake_op(f"flashinfer::{module_name}_paged_run")
     def _fake_paged_run(
@@ -797,6 +795,7 @@ def get_batch_prefill_jit_module(module_name: str, jit_module: Any):
         paged_kv_indices: torch.Tensor,
         paged_kv_last_page_len: torch.Tensor,
         maybe_qk_indptr: Optional[torch.Tensor],
+        o: torch.Tensor,
         layout: int,
         window_left: int,
         logits_soft_cap: float,
@@ -804,8 +803,8 @@ def get_batch_prefill_jit_module(module_name: str, jit_module: Any):
         rope_scale: float,
         rope_theta: float,
         maybe_lse: Optional[torch.Tensor],
-    ) -> torch.Tensor:
-        return torch.empty_like(q)
+    ) -> None:
+        pass
 
     # Register the module.
     #
@@ -832,6 +831,7 @@ def batch_prefill_with_ragged_kv_cache_with_jit_module(
     qo_indptr: torch.Tensor,
     kv_indptr: torch.Tensor,
     maybe_qk_indptr: Optional[torch.Tensor],
+    o: torch.Tensor,
     layout: int,
     window_left: int,
     logits_soft_cap: float,
@@ -840,10 +840,9 @@ def batch_prefill_with_ragged_kv_cache_with_jit_module(
     rope_theta: float,
     maybe_lse: Optional[torch.Tensor],
     *args,
-) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+) -> None:
     """Same arg list with jit_module.ragged_run, but with *args."""
     with q.device as device:  # device guard
-        o = torch.empty_like(q)
         jit_module.ragged_run(
             mask_mode,
             float_workspace_buffer,
@@ -868,7 +867,6 @@ def batch_prefill_with_ragged_kv_cache_with_jit_module(
             *args,
             get_cuda_stream(device),
         )
-        return o
 
 
 def batch_prefill_with_paged_kv_cache_with_jit_module(
@@ -1175,7 +1173,9 @@ def single_prefill_with_kv_cache(
     elif backend == "fa3":
         module_getter = get_single_prefill_sm90_module
 
-    out = module_getter(
+    out = torch.empty_like(q)
+
+    module_getter(
         q.dtype,
         k.dtype,
         q.dtype,
@@ -1192,6 +1192,7 @@ def single_prefill_with_kv_cache(
         packed_custom_mask,
         tmp,
         _get_cache_alibi_slopes_buf(q.shape[1], q.device),
+        out,
         TensorLayout[kv_layout].value,
         window_left,
         logits_soft_cap,
@@ -1994,6 +1995,7 @@ class BatchPrefillWithPagedKVCacheWrapper:
         else:
             sparse_indices = self._paged_kv_indices_buf
 
+        out = torch.empty_like(q)
         run_args = [
             mask_mode,
             self._float_workspace_buffer,
@@ -2009,6 +2011,7 @@ class BatchPrefillWithPagedKVCacheWrapper:
             sparse_indices,  # self._paged_kv_indices_buf,
             self._paged_kv_last_page_len_buf,
             self._qk_indptr_buf,
+            out,
             TensorLayout[self._kv_layout].value,
             window_left,
             logits_soft_cap,
@@ -2019,9 +2022,9 @@ class BatchPrefillWithPagedKVCacheWrapper:
         ]
         if self._jit_backend:
             run_args.extend(list(args))
-            out = batch_prefill_with_paged_kv_cache_with_jit_module(self._jit_module, *run_args)
+            batch_prefill_with_paged_kv_cache_with_jit_module(self._jit_module, *run_args)
         else:
-            out = self._cached_module.paged_run(*run_args)
+            self._cached_module.paged_run(*run_args)
 
         if v_scale is not None:
             out *= v_scale
@@ -2675,6 +2678,7 @@ class BatchPrefillWithRaggedKVCacheWrapper:
             else:
                 mask_mode = MaskMode.NON_CAUSAL.value
 
+        out = torch.empty_like(q)
         run_args = [
             mask_mode,
             self._float_workspace_buffer,
@@ -2685,6 +2689,7 @@ class BatchPrefillWithRaggedKVCacheWrapper:
             v,
             self._custom_mask_buf,
             _get_cache_alibi_slopes_buf(q.shape[1], self.device),
+            out,
             self._qo_indptr_buf,
             self._kv_indptr_buf,
             self._qk_indptr_buf,
@@ -2698,9 +2703,9 @@ class BatchPrefillWithRaggedKVCacheWrapper:
         ]
         if self._jit_backend:
             run_args.extend(list(args))
-            out = batch_prefill_with_ragged_kv_cache_with_jit_module(self._jit_module, *run_args)
+            batch_prefill_with_ragged_kv_cache_with_jit_module(self._jit_module, *run_args)
         else:
-            out = self._cached_module.ragged_run(*run_args)
+            self._cached_module.ragged_run(*run_args)
 
         return (out, lse) if return_lse else out
 
